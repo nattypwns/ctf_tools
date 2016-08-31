@@ -9,13 +9,17 @@ def main():
     logging.basicConfig(level=logging.DEBUG)
     logging.getLogger('angr.path_group').setLevel(logging.DEBUG)
 
-    # Load the binary. This is a 64-bit C++ binary, pretty heavily obfuscated.
+    # Load the binary. This is a 32-bit C binary that takes a string from stdin
+    #
+    # $ ./bitpuzzle 
+    # Bet you can't solve my puzzle!
+    # Give me a string.
+    # hereismyguess
+    # Sorry, hereismyguess is not the right string!
+    #
     p = angr.Project('bitpuzzle')
 
     # This block constructs the initial program state for analysis.
-    # Because we're going to have to step deep into the C++ standard libraries
-    # for this to work, we need to run everyone's initializers. The full_init_state
-    # will do that. In order to do this peformantly, we will use the unicorn engine!
     st = p.factory.full_init_state(args=['./bitpuzzle'], add_options=simuvex.o.unicorn, remove_options={simuvex.o.LAZY_SOLVES})
 
     #
