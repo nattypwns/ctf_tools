@@ -9,7 +9,9 @@ def main():
     logging.basicConfig(level=logging.DEBUG)
     logging.getLogger('angr.path_group').setLevel(logging.DEBUG)
 
+    #
     # Load the binary. This is a 32-bit C binary that takes a string from stdin
+    # https://picoctf.com/problem-static/reversing/bitpuzzle/bitpuzzle
     #
     # $ ./bitpuzzle 
     # Bet you can't solve my puzzle!
