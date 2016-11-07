@@ -1,14 +1,14 @@
 # Using FLAIR to Deal with Static, Stripped ELFs
 
-One of the biggest unknowns you will deal with in the exploit/RE CTF challenges
-is ELFs that are statically linked and stripped.  When you analyze the binary
-with IDA, you get no information about the library calls the code is making. 
+One of the annoying roadblocks you will deal with in exploit/RE CTF challenges
+is an ELF that is statically linked and stripped.  When you analyze the binary
+with IDA, you get no information about the library calls the code is making.
 
 IDA provides the FLAIR tools to help restore this information. This writeup
 hopefully provides a comprehensive procedure to get it done quickly so you can
 get back to pwning.
 
-This procedure is assumed to be running on a Ubuntu LTS box and have a purchased
+This procedure is assumed to be running on a Ubuntu LTS box and that you have a purchased
 IDA Pro copy.
 
 
@@ -25,13 +25,15 @@ Run this nmap command to try and find out more about the server:
 sudo nmap -A pwn.com`
 ```
 
-Or better yet if you can ssh into the server, log in and run
+Or better yet if you can ssh into the server, log in and run:
 
 ```
 cat /etc/lsb-release
+aptitude show libc
+etc...
 ```
 
-Scan the binary itself for the compile time to at least give an idea of
+Scan the binary itself to see if there are any clues  to at least give an idea of
 what libc versions may have been around at the time:
 
 ```
@@ -45,42 +47,44 @@ If these methods don't return much, then you may need to identify multiple
 candidate libc.a's and iterate the process to find the one that provides the
 best result.
 
-Now, clone the libc database project:
+You can do a search on http://packages.ubuntu.com/ once you have some versions.
+The libc6-dev package has libc.a.
+
+Let's assume that this is the libc we think was used:
+
+http://security.ubuntu.com/ubuntu/pool/main/e/eglibc/libc6-dev_2.19-0ubuntu6.9_amd64.deb
+
+Download that deb to a directory (LIBC_DL_DIR) and extract libc.a with:
 
 ```
-https://github.com/niklasb/libc-database
-cd libc-database
+dpg -x ./libc6-dev_2.19-0ubuntu6.9_amd64.deb .
+cp usr/lib/x86_64-linux-gnu/libc.a libc6-dev_2.19-0ubuntu6.9_amd64.a
+rm -rf usr/ *.deb
 ```
 
-Edit the "get" file to add any additional libc versions you might want to try
-out. Then edit the "get_ubuntu" function in common/libc.sh to also pick out the
-static libc.a files (what FLAIR operates on)
-
-Then run "./get". You'll have version-named libc copies in db. You can always
-re-run get to update.
-
+The process is roughly the same with the 32-bit version, just different paths.
 
 ## Step 2: Use FLAIR Utilities To Make Signatures
 
 Find your copy of IDA and locate the "flair65.zip" archive. (65 will be whatever
 version of IDA you obtained). Extract it somewhere, cd to it, and chmod +x
-bin/linux/*.
+bin/linux/*. Now run these commands to create patterns/signatures:
 
 ```
-./bin/linux/pelf /usr/lib/x86_64-linux-gnu/libc.a ./libc.pat
-./bin/linux/sigmake ./libc.pat libc.sig
+./bin/linux/pelf LIBC_DL_DIR/libc6-dev_2.19-0ubuntu6.9_amd64.a libc6-dev_2.19-0ubuntu6.9_amd64.pat
+./bin/linux/sigmake -n"libc6-dev_2.19-0ubuntu6.9_amd64.a" libc6-dev_2.19-0ubuntu6.9_amd64.pat libc6-dev_2.19-0ubuntu6.9_amd64.sig
 ```
 
-Edit the libc.exc collisions file. If none of the symbols listed are ones you
-think you'll care about, just delete the commented lines and save the file. Then
-run:
+Edit the libc.exc collisions file, if it was created. If none of the symbols listed are ones you
+think you'll care about (they probably aren't), just delete the commented lines and save the file. Then
+run it again, and compress the final result:
 
 ```
-./bin/linux/sigmake -n "libc6-amd64_2.19-0ubuntu6" ./libc.pat libc.sig
-./bin/linux/zipsig ./libc.sig
+./bin/linux/sigmake -n"libc6-dev_2.19-0ubuntu6.9_amd64.a" libc6-dev_2.19-0ubuntu6.9_amd64.pat libc6-dev_2.19-0ubuntu6.9_amd64.sig
+./bin/linux/zipsig libc6-dev_2.19-0ubuntu6.9_amd64.sig
 ```
 
-Now copy the libc.sig file to IDA_Install_Directory/sig/. 
+Now copy the libc6-dev_2.19-0ubuntu6.9_amd64.sig file to IDA_INSTALL_DIR/sig/. 
 
 ## Step 3: Apply Signatures
 
@@ -96,3 +100,12 @@ of renamed functions!
 Some seemingly obvious functions (like strcmp) may not be renamed. For these,
 follow the execution down a few levels to see if there are defined symbols in
 deeper functions that can give you a hint. Then rename the function to match.
+
+If there is still a lot of "Regular function" data, try to identify if other
+common libraries like libm.a, libz.a, etc are included and repeat the process
+with those to get more.
+
+## Extra/TODO
+
+* Any way to do this type of enrichment for GDB?
+
