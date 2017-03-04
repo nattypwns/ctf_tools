@@ -54,7 +54,7 @@ Let's assume that this is the libc we think was used:
 
 http://security.ubuntu.com/ubuntu/pool/main/e/eglibc/libc6-dev_2.19-0ubuntu6.9_amd64.deb
 
-Download that deb to a directory (LIBC_DL_DIR) and extract libc.a with:
+Download that deb to a directory (LIBC_DL_DIR) and extract `libc.a` with:
 
 ```
 dpg -x ./libc6-dev_2.19-0ubuntu6.9_amd64.deb .
