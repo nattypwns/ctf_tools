@@ -9,7 +9,7 @@ logging.basicConfig()
 # angr.manager.l.setLevel('DEBUG')
 
 
-decArr="76DNQF4WMJBRVUHAZ8K1PETC2395XL0Y"
+decArr="XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX""
 def encKey(kbin):
     ink = ""
     for c in kbin:
@@ -131,7 +131,3 @@ def solve_phase2():
 solve_phase2()
    
 
-"""
-FINAL KEY:
-777777777777Y0CHUJ920UVL0
-"""
